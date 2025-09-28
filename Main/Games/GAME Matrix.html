@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Game Matrix</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    background: black;
+    color: white;
+    font-family: Arial, sans-serif;
+    overflow: hidden;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 220px;
+    background: black;
+    border-right: 1px solid white;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .search-bar {
+    padding: 10px;
+    background: black;
+  }
+  .search-bar input {
+    width: 100%;
+    padding: 6px;
+    background: black;
+    border: 1px solid white;
+    color: white;
+    outline: none;
+  }
+  .game-button {
+    background: black;
+    color: white;
+    border: 1px solid white;
+    padding: 10px;
+    margin: 2px 5px;
+    text-align: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .game-button:hover { background: #222; }
+
+  /* Main area */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .topbar {
+    background: #111;
+    border-bottom: 1px solid white;
+    padding: 10px;
+    text-align: center;
+    font-weight: bold;
+  }
+  .content {
+    flex: 1;
+    display: flex;
+    flex-wrap: wrap;
+    overflow-y: auto;
+    padding: 10px;
+    gap: 10px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .content .game-button { width: 200px; }
+
+  /* Logo */
+  .logo {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    width: 120px;
+  }
+
+  /* Flex container */
+  #container {
+    display: flex;
+    height: 100%;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="search-bar">
+      <input type="text" id="search" placeholder="Search games...">
+    </div>
+    <div id="sidebar-buttons"></div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="topbar">Recent Games</div>
+    <div class="content" id="main-content"></div>
+  </div>
+</div>
+
+<!-- Logo -->
+<img class="logo" src="https://raw.githubusercontent.com/NOTAHACKER9999/GAME-OVERRIDE/refs/heads/main/MATRIX%20GLITCH/Logos/Glitch%20Override%20Logo.png">
+
+<script>
+(function(){
+  const sidebarButtons = document.getElementById("sidebar-buttons");
+  const mainContent = document.getElementById("main-content");
+  const searchInput = document.getElementById("search");
+
+  let games = [];
+
+  // ✅ Fetch JSON
+  async function fetchGames() {
+    try {
+      const res = await fetch("https://override-games.th15isar0bothi.workers.dev/");
+      games = await res.json();
+      renderSidebar(games);
+      renderRandomGames();
+    } catch (e) { console.error("Failed to fetch games:", e); }
+  }
+
+  function renderSidebar(list) {
+    sidebarButtons.innerHTML = "";
+    list.sort((a,b)=>a.name.localeCompare(b.name)).forEach(game=>{
+      const btn=document.createElement("div");
+      btn.className="game-button";
+      btn.textContent=game.name.replace(".html","");
+      btn.onclick=()=>openGameInNewTab(game.raw_url);
+      sidebarButtons.appendChild(btn);
+    });
+  }
+
+  function renderRandomGames() {
+    mainContent.innerHTML="";
+    [...games].sort(()=>0.5-Math.random()).slice(0,20).forEach(game=>{
+      const btn=document.createElement("div");
+      btn.className="game-button";
+      btn.textContent=game.name.replace(".html","");
+      btn.onclick=()=>openGameInNewTab(game.raw_url);
+      mainContent.appendChild(btn);
+    });
+  }
+
+  // ✅ Open game in a new about:blank window with blob
+  async function openGameInNewTab(url) {
+    try {
+      const res = await fetch(url);
+      let html = await res.text();
+
+      // Inject <base> for relative assets
+      const base = url.substring(0, url.lastIndexOf("/") + 1);
+      if (!html.includes("<base")) {
+        html = html.replace(/<head[^>]*>/i, match => `${match}\n<base href="${base}">`);
+      }
+
+      const blob = new Blob([html], { type: "text/html" });
+      const blobURL = URL.createObjectURL(blob);
+
+      // Open in new window/tab
+      window.open(blobURL, "_blank");
+
+      // Note: browser will handle closing tab naturally
+    } catch(err){ 
+      console.error("Failed to load game:", err); 
+      alert("Failed to load game.");
+    }
+  }
+
+  searchInput.addEventListener("input",()=>{
+    const query = searchInput.value.toLowerCase();
+    const filtered = games.filter(g=>g.name.toLowerCase().includes(query));
+    renderSidebar(filtered);
+  });
+
+  fetchGames();
+})();
+</script>
+</body>
+  </html>
